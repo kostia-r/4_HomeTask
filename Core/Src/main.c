@@ -19,7 +19,8 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-
+#include <stdio.h>
+#include <string.h>
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -33,6 +34,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define TEMPERATURE_DELAY 5000 //temperature sensor polling time, ms
+#define MAX_LEN 100 // max length of string
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -47,6 +49,8 @@ UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN PV */
 volatile uint32_t temperature_timer = 0; //see stm32f4xx_it.c line 45,187
+char clr_scr[5] =
+{ 0x1B, 0x5B, 0x32, 0x4A }; //clear screen command to console
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -61,126 +65,79 @@ static void MX_USART3_UART_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-void ToogleLED_and_UARTTx(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin, UART_HandleTypeDef *huart, uint8_t *pData_on, uint8_t *pData_off, uint8_t size_Data_on,
-		uint8_t size_Data_off)
+void ToogleLED_and_UARTTx(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin, UART_HandleTypeDef *huart, uint8_t *pData_on, uint8_t *pData_off)
 {
 	HAL_GPIO_TogglePin(GPIOx, GPIO_Pin);
 	if (HAL_GPIO_ReadPin(GPIOx, GPIO_Pin) == GPIO_PIN_SET)
-	{
-		HAL_UART_Transmit(huart, (uint8_t*) pData_on, size_Data_on, 10);
-	}
+		HAL_UART_Transmit(huart, (uint8_t*) pData_on, strlen((char*) pData_on), 10);
 	else
-	{
-		HAL_UART_Transmit(huart, (uint8_t*) pData_off, size_Data_off, 10);
-	}
+		HAL_UART_Transmit(huart, (uint8_t*) pData_off, strlen((char*) pData_off), 10);
 }
-
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	switch (GPIO_Pin)
 	{
 	case SWT1_Pin:
-	{
-		ToogleLED_and_UARTTx(GPIOD, LED_BLUE_Pin, &huart3, (uint8_t*) "LED Blue ON\r\n", (uint8_t*) "LED Blue OFF\r\n", 11 + 2, 12 + 2);
-	}
+		ToogleLED_and_UARTTx(GPIOD, LED_BLUE_Pin, &huart3, (uint8_t*) "LED Blue ON\r\n", (uint8_t*) "LED Blue OFF\r\n");
 		break;
 	case SWT3_Pin:
-	{
-		ToogleLED_and_UARTTx(GPIOD, LED_ORANGE_Pin, &huart3, (uint8_t*) "LED Orange ON\r\n", (uint8_t*) "LED Orange OFF\r\n", 13 + 2, 14 + 2);
-	}
+		ToogleLED_and_UARTTx(GPIOD, LED_ORANGE_Pin, &huart3, (uint8_t*) "LED Orange ON\r\n", (uint8_t*) "LED Orange OFF\r\n");
 		break;
 	case SWT4_Pin:
-	{
-		ToogleLED_and_UARTTx(GPIOD, LED_RED_Pin, &huart3, (uint8_t*) "LED Red ON\r\n", (uint8_t*) "LED Red OFF\r\n", 10 + 2, 11 + 2);
-	}
+		ToogleLED_and_UARTTx(GPIOD, LED_RED_Pin, &huart3, (uint8_t*) "LED Red ON\r\n", (uint8_t*) "LED Red OFF\r\n");
 		break;
 	case SWT5_Pin:
-	{
-		ToogleLED_and_UARTTx(GPIOD, LED_GREEN_Pin, &huart3, (uint8_t*) "LED Green ON\r\n", (uint8_t*) "LED Green OFF\r\n", 12 + 2, 13 + 2);
-	}
+		ToogleLED_and_UARTTx(GPIOD, LED_GREEN_Pin, &huart3, (uint8_t*) "LED Green ON\r\n", (uint8_t*) "LED Green OFF\r\n");
 		break;
 	case SWT2_Pin:
-	{
-		HAL_UART_Transmit(&huart3, (uint8_t*) "Invalid key!\r\n", 12 + 2, 10);
-	}
+		HAL_UART_Transmit(&huart3, (uint8_t*) "Invalid key!\r\n", strlen("Invalid key!\r\n"), 10);
 		break;
 	}
 }
 
 void UARTRx(void)
 {
-	uint8_t rcvBuf[1];
+	uint8_t rcvBuf;
 	HAL_StatusTypeDef result;
-	result = HAL_UART_Receive(&huart3, rcvBuf, 1, 10);
+	result = HAL_UART_Receive(&huart3, &rcvBuf, 1, 10);
 	if (result == HAL_OK)
-	{
-		switch (rcvBuf[0])
+		switch (rcvBuf)
 		{
 		case '2': //analogue of the SWT1 button on the board
-		{
-			ToogleLED_and_UARTTx(GPIOD, LED_BLUE_Pin, &huart3, (uint8_t*) "LED Blue ON\r\n", (uint8_t*) "LED Blue OFF\r\n", 11 + 2, 12 + 2);
-		}
+			ToogleLED_and_UARTTx(GPIOD, LED_BLUE_Pin, &huart3, (uint8_t*) "LED Blue ON\r\n", (uint8_t*) "LED Blue OFF\r\n");
 			break;
-
 		case '8': //analogue of the SWT3 button on the board
-		{
-			ToogleLED_and_UARTTx(GPIOD, LED_ORANGE_Pin, &huart3, (uint8_t*) "LED Orange ON\r\n", (uint8_t*) "LED Orange OFF\r\n", 13 + 2, 14 + 2);
-		}
+			ToogleLED_and_UARTTx(GPIOD, LED_ORANGE_Pin, &huart3, (uint8_t*) "LED Orange ON\r\n", (uint8_t*) "LED Orange OFF\r\n");
 			break;
 		case '6': //analogue of the SWT4 button on the board
-		{
-			ToogleLED_and_UARTTx(GPIOD, LED_RED_Pin, &huart3, (uint8_t*) "LED Red ON\r\n", (uint8_t*) "LED Red OFF\r\n", 10 + 2, 11 + 2);
-		}
+			ToogleLED_and_UARTTx(GPIOD, LED_RED_Pin, &huart3, (uint8_t*) "LED Red ON\r\n", (uint8_t*) "LED Red OFF\r\n");
 			break;
 		case '4': //analogue of the SWT5 button on the board
-		{
-			ToogleLED_and_UARTTx(GPIOD, LED_GREEN_Pin, &huart3, (uint8_t*) "LED Green ON\r\n", (uint8_t*) "LED Green OFF\r\n", 12 + 2, 13 + 2);
-		}
+			ToogleLED_and_UARTTx(GPIOD, LED_GREEN_Pin, &huart3, (uint8_t*) "LED Green ON\r\n", (uint8_t*) "LED Green OFF\r\n");
 			break;
 		default: //analogue of the SWT2 button on the board
-			HAL_UART_Transmit(&huart3, (uint8_t*) "Invalid key!\r\n", 12 + 2, 10);
+			HAL_UART_Transmit(&huart3, (uint8_t*) "Invalid key!\r\n", strlen("Invalid key!\r\n"), 10);
 			break;
 		}
-	}
-}
-
-uint32_t MAP_Invert(int32_t x, int32_t in_min, int32_t in_max, int32_t out_min, int32_t out_max)
-{
-	return out_max - (x - in_min) * (out_max - out_min) / (in_max - in_min);
 }
 
 void GetExternalTemperature(void)
 {
 	volatile HAL_StatusTypeDef adcPoolResult;
-	int32_t valueExTemp = 0;
-	int16_t externalTemp = 0;
-	double voltageExTemp = 0;
+	uint32_t valueExTemp = 0;
+	int32_t externalTemp = 0;
 	HAL_ADC_Start(&hadc1);
 	adcPoolResult = HAL_ADC_PollForConversion(&hadc1, 100);
 	if (adcPoolResult == HAL_OK)
 	{
 		valueExTemp = HAL_ADC_GetValue(&hadc1); // read value from external temperature sensor
-		voltageExTemp = (double) valueExTemp * (3.3 / 4096) * 100; //convert valueExTemp to voltage (volts x100)
-		externalTemp = (int16_t) MAP_Invert(voltageExTemp, 2, 202, 1, 100); //convert voltage to temperature x10 in the range from 1 to 100°C. 2 - voltage x100 at a temperature of 100°C, 202  - voltage x100 at a temperature of 0°C
-		HAL_UART_Transmit(&huart3, (uint8_t*) "External temperature: ", 22, 10);
-		if (externalTemp < 10)
-		{
-			char temperatureStr[1];
-			temperatureStr[0] = '0' + externalTemp;
-			HAL_UART_Transmit(&huart3, (uint8_t*) temperatureStr, 4, 10);
-		}
-		else if (externalTemp >= 10)
-		{
-			char temperatureStr[2];
-			temperatureStr[0] = '0' + externalTemp / 10;
-			temperatureStr[1] = '0' + externalTemp % 10;
-			HAL_UART_Transmit(&huart3, (uint8_t*) temperatureStr, 4, 10);
-		}
-		else
-		{
-			HAL_UART_Transmit(&huart3, (uint8_t*) "Out of range of temperature measurement!", 41, 10);
-		}
-		HAL_UART_Transmit(&huart3, (uint8_t*) "\r\n", 2, 10);
+		externalTemp = ((4095 - valueExTemp) * 124) / 4096 - 24; //convert value to temperature in the range from -24 to 100°C.
+
+		char temperatureStr[MAX_LEN] =
+		{ 0 };
+		HAL_UART_Transmit(&huart3, (uint8_t*) &clr_scr, strlen(clr_scr), 10);
+		sprintf(temperatureStr, "External temperature: %ld\u00B0C\r\n", externalTemp);
+		HAL_UART_Transmit(&huart3, (uint8_t*) &temperatureStr, strlen(temperatureStr), 10);
 	}
 	HAL_ADC_Stop(&hadc1);
 }
